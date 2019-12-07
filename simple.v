@@ -192,9 +192,9 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
             end
 
             //
-            // ADD/MUL
+            // ADD/MUL/LT/EQ
             //
-            16'h001, 16'h002: begin
+            16'h001, 16'h002, 16'h007, 16'h008: begin
                 address_bus <= pc + 1;
                 if (decoded_mode1 == 1) begin
                     instruction_stage <= 2; // immediate mode
@@ -204,12 +204,12 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 next_instr = 0;
             end
 
-            16'h101, 16'h102: begin
+            16'h101, 16'h102, 16'h107, 16'h108: begin
                 address_bus <= data_bus;
                 instruction_stage <= 2;
             end
 
-            16'h201, 16'h202: begin
+            16'h201, 16'h202, 16'h207, 16'h208: begin
                 registers[0] <= data_bus;
                 address_bus <= pc + 2;
                 if (decoded_mode2 == 1) begin
@@ -219,34 +219,40 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 end
             end
 
-            16'h301, 16'h302: begin
+            16'h301, 16'h302, 16'h307, 16'h308: begin
                 address_bus <= data_bus;
                 instruction_stage <= 4;
             end
 
-            16'h401, 16'h402: begin
+            16'h401, 16'h402, 16'h407, 16'h408: begin
                 registers[1] <= data_bus;
                 alu_a <= registers[0];
                 alu_b <= data_bus;
-                if (decoded_op == 1) begin
-                    alu_op <= 4'b0001; // +
-                end else begin
-                    alu_op <= 4'b1100; // *
-                end
+                casez (decoded_op)
+                    8'h1: alu_op <= 4'b0001; // +
+                    8'h2: alu_op <= 4'b1100; // *
+                    8'h7: alu_op <= 4'b0010; // -
+                    8'h8: alu_op <= 4'b0010; // -
+                endcase
                 address_bus <= pc + 3;
                 instruction_stage <= 5;
             end
 
-            16'h501, 16'h502: begin
+            16'h501, 16'h502, 16'h507, 16'h508: begin
                 registers[2] <= data_bus;
                 address_bus <= data_bus; // output position mode (value)
                 flags <= alu_flags_out;
-                data_out_buffer <= alu_out;
+                casez (decoded_op)
+                    8'h1: data_out_buffer <= alu_out;
+                    8'h2: data_out_buffer <= alu_out;
+                    8'h7: data_out_buffer <= {7'b0, `ZF};
+                    8'h8: data_out_buffer <= {7'b0, (`SF == `OF)};
+                endcase
                 ram_write <= 1;
                 instruction_stage <= 6;
             end
 
-            16'h601, 16'h602: begin
+            16'h601, 16'h602, 16'h607, 16'h608: begin
                 ram_write <= 0;
                 pc = pc + 4;
                 next_instr = 1;

@@ -310,14 +310,12 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
 
             16'h204: begin
                 registers[0] <= data_bus;
-                $display("%x", data_bus);
                 address_bus <= 32'hFFFF0001;
                 instruction_stage <= 3;
             end
             
             16'h304: begin
                 data_out_buffer <= registers[0];
-                $display("%x", registers[0]);
                 ram_write <= 1;
                 instruction_stage <= 4;
             end

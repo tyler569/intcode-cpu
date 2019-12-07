@@ -48,7 +48,7 @@ endmodule
 // `define RAM_DEBUG
 
 module SimpleRAM(clock, address, data, we, oe);
-    parameter SIZE = 2048;
+    parameter SIZE = 32768;
 
     input clock;
     input[31:0] address;
@@ -61,10 +61,10 @@ module SimpleRAM(clock, address, data, we, oe);
     reg[31:0] read;
 
     // tristate control
-    assign data = (address < 32'h0fff && oe && !we) ? read : 32'bz;
+    assign data = (address < SIZE && oe && !we) ? read : 32'bz;
 
     always @ (posedge clock) begin
-        if (address < 32'h0FFF && we) begin
+        if (address < SIZE && we) begin
             `ifdef RAM_DEBUG
                 $display("time: %t, RAM: writing %x (%0d) to %0d",
                     $time, data, data, address);
@@ -74,11 +74,11 @@ module SimpleRAM(clock, address, data, we, oe);
     end
 
     always @ (posedge clock) begin
-        if (address < 32'h1000 && !we && oe) begin
+        if (address < SIZE) begin
             read <= memory[address];
             `ifdef RAM_DEBUG
                 $display("time: %t, RAM: reading %0d: got %x (%0d)",
-                    $time, address, read, read);
+                    $time, address, memory[address], memory[address]);
             `endif
         end
     end
@@ -183,7 +183,7 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
         end else begin
             decode_cycle <= 1;
 
-            $display("running: %x, mode{1,2}: %x %x", {instruction_stage, decoded_op}, decoded_mode1, decoded_mode2);
+            // $display("running: %x, mode{1,2}: %x %x", {instruction_stage, decoded_op}, decoded_mode1, decoded_mode2);
 
             casez ({instruction_stage, decoded_op})
             16'd99: begin
@@ -295,10 +295,10 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
             //
             16'h004: begin
                 address_bus <= pc + 1;
-                if (decoded_mode1 == 0) begin
-                    instruction_stage <= 1;
-                end else begin
+                if (decoded_mode1 == 1) begin
                     instruction_stage <= 2;
+                end else begin
+                    instruction_stage <= 1;
                 end
                 next_instr = 0;
             end
@@ -310,12 +310,14 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
 
             16'h204: begin
                 registers[0] <= data_bus;
+                $display("%x", data_bus);
                 address_bus <= 32'hFFFF0001;
                 instruction_stage <= 3;
             end
             
             16'h304: begin
                 data_out_buffer <= registers[0];
+                $display("%x", registers[0]);
                 ram_write <= 1;
                 instruction_stage <= 4;
             end

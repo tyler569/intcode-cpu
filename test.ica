@@ -1,0 +1,14 @@
+1,$v,$v,$v, // add test 5 + 5
+2,$v,$v,$v, // mul test 10 * 10
+4,$v,       // output test position
+104,256,    // output static
+7,$a,$b,$v, // if 1 < 0
+8,$a,$b,$o, // if 1 == 0
+4,$v,       // output 1 < 0
+4,$o,       // output 1 == 0
+99,         // halt
+v: 5,
+o: 0,
+a: 0,
+b: 1
+

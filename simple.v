@@ -192,9 +192,9 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
             end
 
             //
-            // ADD
+            // ADD/MUL
             //
-            16'h001: begin // add
+            16'h001, 16'h002: begin
                 address_bus <= pc + 1;
                 if (decoded_mode1 == 1) begin
                     instruction_stage <= 2; // immediate mode
@@ -204,12 +204,12 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 next_instr = 0;
             end
 
-            16'h101: begin
+            16'h101, 16'h102: begin
                 address_bus <= data_bus;
                 instruction_stage <= 2;
             end
 
-            16'h201: begin
+            16'h201, 16'h202: begin
                 registers[0] <= data_bus;
                 address_bus <= pc + 2;
                 if (decoded_mode2 == 1) begin
@@ -219,21 +219,25 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 end
             end
 
-            16'h301: begin
+            16'h301, 16'h302: begin
                 address_bus <= data_bus;
                 instruction_stage <= 4;
             end
 
-            16'h401: begin
+            16'h401, 16'h402: begin
                 registers[1] <= data_bus;
                 alu_a <= registers[0];
                 alu_b <= data_bus;
-                alu_op <= 4'b0001; // +
+                if (decoded_op == 1) begin
+                    alu_op <= 4'b0001; // +
+                end else begin
+                    alu_op <= 4'b1100; // *
+                end
                 address_bus <= pc + 3;
                 instruction_stage <= 5;
             end
 
-            16'h501: begin
+            16'h501, 16'h502: begin
                 registers[2] <= data_bus;
                 address_bus <= data_bus; // output position mode (value)
                 flags <= alu_flags_out;
@@ -242,64 +246,7 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 instruction_stage <= 6;
             end
 
-            16'h601: begin
-                ram_write <= 0;
-                pc = pc + 4;
-                next_instr = 1;
-            end
-
-            //
-            // MULTIPLY
-            //
-            16'h002: begin
-                address_bus <= pc + 1;
-                if (decoded_mode1 == 1) begin
-                    instruction_stage <= 2; // immediate mode
-                end else begin
-                    instruction_stage <= 1; // position mode
-                end
-                next_instr = 0;
-            end
-
-            16'h102: begin
-                address_bus <= data_bus;
-                instruction_stage <= 2;
-            end
-
-            16'h202: begin
-                registers[0] <= data_bus;
-                address_bus <= pc + 2;
-                if (decoded_mode2 == 1) begin
-                    instruction_stage <= 4; // immediate mode
-                end else begin
-                    instruction_stage <= 3; // position mode
-                end
-            end
-
-            16'h302: begin
-                address_bus <= data_bus;
-                instruction_stage <= 4;
-            end
-
-            16'h402: begin
-                registers[1] <= data_bus;
-                alu_a <= registers[0];
-                alu_b <= data_bus;
-                alu_op <= 4'b1100; // *
-                address_bus <= pc + 3;
-                instruction_stage <= 5;
-            end
-
-            16'h502: begin
-                registers[2] <= data_bus;
-                address_bus <= data_bus; // output position mode (value)
-                flags <= alu_flags_out;
-                data_out_buffer <= alu_out;
-                ram_write <= 1;
-                instruction_stage <= 6;
-            end
-
-            16'h602: begin
+            16'h601, 16'h602: begin
                 ram_write <= 0;
                 pc = pc + 4;
                 next_instr = 1;
@@ -353,7 +300,6 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
 
             16'h104: begin
                 address_bus <= data_bus; // position mode
-
                 instruction_stage <= 2;
             end
 
@@ -373,6 +319,12 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                 ram_write <= 0;
                 pc = pc + 2;
                 next_instr = 1;
+            end
+
+            //
+            // JUMP
+            //
+            16'h005, 16'h006: begin
             end
 
             //

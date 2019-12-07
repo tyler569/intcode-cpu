@@ -18,6 +18,9 @@ for i in range(len(cmds)):
     c = cmds[i]
     if ":" in c:
         name, value = c.split(":")
+        if name in names:
+            print("error: redefining label {}".format(name), file=sys.stderr)
+            exit(1)
         names[name] = i
         cmds[i] = value
 

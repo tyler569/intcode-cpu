@@ -1,14 +1,33 @@
-1,$v,$v,$v, // add test 5 + 5
-2,$v,$v,$v, // mul test 10 * 10
-4,$v,       // output test position
-104,256,    // output static
-7,$a,$b,$v, // if 1 < 0
-8,$a,$b,$o, // if 1 == 0
-4,$v,       // output 1 < 0
-4,$o,       // output 1 == 0
-99,         // halt
+1,$v,$v,$v,       // add test 5 + 5
+2,$v,$v,$v,       // mul test 10 * 10
+4,$v,             // output test position
+104,256,          // output static
+7,$lt_a,$lt_b,$v, // if 2 < 1
+8,$eq_a,$eq_b,$o, // if 0 == 0
+4,$v,             // output lt
+4,$o,             // output eq
+
+8,$lt_a,$lt_b,$v, // if 2 == 1
+7,$eq_a,$eq_b,$o, // if 0 < 0
+4,$v,             // output lt
+4,$o,             // output eq
+
+1107, 0, 0, $v,   // if 0 < 0 immediate
+4, $v,
+1108, 0, 0, $v,   // if 0 == 0 immediate
+4, $v,
+
+1105, 1, $target, // jump if 1 -> target
+99,               // halt
+
+target:
+104, 111,         // say we made it
+99,               // halt
+
 v: 5,
 o: 0,
-a: 0,
-b: 1
+eq_a: 0,
+eq_b: 0,
+lt_a: 1,
+lt_b: 2
 

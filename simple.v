@@ -163,10 +163,10 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
 
     reg decode_cycle = 1;
 
-    `define ZF flags[0]
-    `define CF flags[1]
-    `define OF flags[2]
-    `define SF flags[3]
+    `define ZF alu_flags_out[0]
+    `define CF alu_flags_out[1]
+    `define OF alu_flags_out[2]
+    `define SF alu_flags_out[3]
 
     always @ (posedge clock) begin
         if (next_instr) begin
@@ -183,7 +183,7 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
         end else begin
             decode_cycle <= 1;
 
-            // $display("running: %x, mode{1,2}: %x %x", {instruction_stage, decoded_op}, decoded_mode1, decoded_mode2);
+            $display("running: %x, mode{1,2}: %x %x", {instruction_stage, decoded_op}, decoded_mode1, decoded_mode2);
 
             casez ({instruction_stage, decoded_op})
             16'd99: begin
@@ -234,19 +234,18 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
                     8'h7: alu_op <= 4'b0010; // -
                     8'h8: alu_op <= 4'b0010; // -
                 endcase
+                // $display("%0d %0d %0d", registers[0], decoded_op, data_bus);
                 address_bus <= pc + 3;
                 instruction_stage <= 5;
             end
 
             16'h501, 16'h502, 16'h507, 16'h508: begin
-                registers[2] <= data_bus;
                 address_bus <= data_bus; // output position mode (value)
-                flags <= alu_flags_out;
                 casez (decoded_op)
                     8'h1: data_out_buffer <= alu_out;
                     8'h2: data_out_buffer <= alu_out;
-                    8'h7: data_out_buffer <= {7'b0, `ZF};
-                    8'h8: data_out_buffer <= {7'b0, (`SF == `OF)};
+                    8'h7: data_out_buffer <= {7'b0, (`SF != `OF)};
+                    8'h8: data_out_buffer <= {7'b0, `ZF};
                 endcase
                 ram_write <= 1;
                 instruction_stage <= 6;
@@ -331,6 +330,45 @@ module SimpleCPU(clock, int, reset, address_bus, ram_write, data_bus);
             // JUMP
             //
             16'h005, 16'h006: begin
+                address_bus <= pc + 1;
+                next_instr = 0;
+                if (decoded_mode1 == 1) begin
+                    instruction_stage <= 2;
+                end else begin
+                    instruction_stage <= 1;
+                end
+            end
+
+            16'h105, 16'h106: begin
+                address_bus <= data_bus; // position mode
+                instruction_stage <= 2;
+            end
+
+            16'h205, 16'h206: begin
+                registers[0] <= data_bus; // jump condition
+                address_bus <= pc + 2;
+                if (decoded_mode2 == 1) begin
+                    instruction_stage <= 4;
+                end else begin
+                    instruction_stage <= 3;
+                end
+            end
+
+            16'h305, 16'h306: begin
+                address_bus <= data_bus; // position mode
+                instruction_stage <= 4;
+            end
+
+            16'h405, 16'h406: begin
+                jump_to = data_bus;
+                registers[1] <= data_bus; // target
+                do_jump = (decoded_op == 5) ^ (registers[0] == 0);
+                // $display("jump op: %0d, test: %0d", decoded_op, registers[0]);
+                // $display("do jump: %b", do_jump);
+                if (!do_jump) begin
+                    pc = pc + 3;
+                end
+                next_instr = 1;
             end
 
             //
@@ -373,7 +411,7 @@ module IntcodeInputPort(clock, address_bus, ram_write, data_bus);
 
     wire output_enable;
     assign output_enable = address_bus == 32'hFFFF0000;
-    assign data_bus = output_enable ? 32'h5 : 32'hz;
+    assign data_bus = output_enable ? 32'h1 : 32'hz;
 endmodule
 
 module IntcodeOutputPort(clock, address_bus, ram_write, data_bus);

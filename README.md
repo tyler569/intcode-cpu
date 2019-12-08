@@ -11,6 +11,9 @@ Still, I think it's interesting to see how this might be impelemnted if it were.
 
 If you're interested in Verilog resources to try to learn or follow along, here are some links:
 
+- http://www.asic-world.com/verilog/veritut.html
+- https://numato.com/kb/learning-fpga-verilog-beginners-guide-part-1-introduction/
+
 
 ### running the CPU
 
@@ -38,7 +41,7 @@ halt
 
 This is running the day 5 part 1 program, and that output does match my solution.
 
-It's not easy to do interactive input in Verilog, as it's not designed to create programs with user input, so the input device is implemented as a memory mapped I/O decice in the CPU memory space. That device is specified by the IntcodeInputPort module in the Verilog code, and to run day 5 part 2, you just need to change the static 1 to a 5 - (32'h5).
+It's not easy to do interactive input in Verilog, as it's not designed to create programs with user input, so the input device is implemented as a memory mapped I/O device in the CPU memory space. That device is specified by the IntcodeInputPort module in the Verilog code, and to run day 5 part 2, you just need to change the static 1 to a 5 - (`32'h5`).
 
 The output port is implemented in the same way, as a memory mapped device, and this means it should be possible to hook multiple of these together to complete day 7, by implementing slightly different versions of the InputPort and OutputPort devices that talk to each other.
 
